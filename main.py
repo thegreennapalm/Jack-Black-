@@ -1,26 +1,32 @@
 import random
+import time
 
 #instance variables
 myCards = []
+splitCards = []
 myCardValue = 0
 dealersCards = []
 dealerTopCard = []
 dealerTopCardValue = 0
 dealerCardValue = 0
+splitCardValue = 0
 deck = []
 myMoney = 1000
 myBet = 0
 secondaryBet = 0
 lost = False
 won = False
+pushed = False
 insuranceTaken = False
 doubleDownTaken = False
+splitTaken = False
 
 
 def blackjack():
 	'''makes a game of blackjack'''
 
 	global myCards
+	global splitCards
 	global dealersCards
 	global myMoney
 	global myBet
@@ -28,13 +34,32 @@ def blackjack():
 	global dealerTopCard
 	global myCardValue
 	global dealerCardValue
+	global splitCardValue
 	global lost
 	global won
+	global pushed
+	global secondaryBet
+	global insuranceTaken
+	global doubleDownTaken
+	global splitTaken
 		
 	lost = False
+	won = False
+	push = False
 	myCards = []
 	dealersCards = []
+	splitCards = []
 	dealerTopCard = []
+	dealerTopCardValue = 0
+	myCardValue = 0
+	dealerCardValue = 0
+	secondaryBet = 0
+	insuranceTaken = False
+	doubleDownTaken = False
+	splitTaken = False
+	splitCardValue = 0
+	
+
 	if len(deck) < 60:
 		print("\nShuffling deck.\n")
 		generateDeck()
@@ -50,6 +75,25 @@ def blackjack():
 	elif won:
 		winMessage()
 		return
+	elif pushed:
+		push()
+		return
+	elif splitTaken:
+		splitMove()
+		return
+	playerMove()
+	dealerHit()
+	checkWin()
+	if lost:
+		loseMessage()
+		return
+	elif won:
+		winMessage()
+		return
+	elif pushed:
+		push()
+		return
+	
 
 def firstRoundBlackjack():
 	global myBet
@@ -144,6 +188,11 @@ def deckToString(deck):
 def wager():
 	'''makes a bet'''
 	global myMoney
+	if myMoney <= 100:
+		print("\nYou need more funds! Please wait 15 seconds to replenish your funds!\n")
+		time.sleep(15)
+		myMoney += 500
+		print("$500 has been added to your funds!")
 	wager = makeWager()
 	invalidBet = True
 	while invalidBet:
@@ -188,6 +237,10 @@ def sayCards():
 	print("The dealer's top card is the", deckToString(dealerTopCard)[0])
 	print("You have the", " and the ".join(deckToString(myCards)))
 
+def sayCardsSplit():
+	'''List the cards you have in a split deck'''
+	print("The dealer's top card is the", deckToString(dealerTopCard)[0])
+	print("You have the", " and the ".join(deckToString(splitCards)))
 
 def sayCardValues():
 	'''Say the value of the cards'''
@@ -197,7 +250,9 @@ def sayCardValues():
 	getCardValues()
 	print("\nThe value of the dealer's",
 		deckToString(dealerTopCard)[0], "is", dealerTopCardValue)
-	print("The value of your cards is", myCardValue)
+	print("The value of your cards in your main deck is", myCardValue)
+	if splitTaken:
+		print("The value of your cards in your secondary deck is", splitCardValue)
 
 
 def getCardValues():
@@ -205,6 +260,7 @@ def getCardValues():
 	global myCardValue
 	global dealerCardValue
 	global dealerTopCardValue
+	global splitCardValue
 	mySum = 0
 	for i in myCards:
 		mySum += i[2]
@@ -214,6 +270,10 @@ def getCardValues():
 		dealerSum += i[2]
 	dealerCardValue = dealerSum
 	dealerTopCardValue = dealerTopCard[0][2]
+	splitSum = 0
+	for i in splitCards:
+		splitSum += i[2]
+	splitCardValue = splitSum
 	return
 
 
@@ -228,6 +288,7 @@ def winMessage():
 	myMoney += myBet
 	print("\nCongratulations! You win! $%.2f has been added to your money amount! You currently have $%.2f.\n"
 		% (myBet, myMoney))
+	print("\nIf you want to play again, type in blackjack()!\n")
 
 def loseMessage():
 	'''Displayed when the player loses'''
@@ -235,14 +296,15 @@ def loseMessage():
 	myMoney -= myBet
 	print("\nDarn, you lost. D: Better luck next time! You have lost $%.2f. You have $%.2f remaining.\n"
 		% (myBet, myMoney))
+	print("\nIf you want to play again, type in blackjack()!\n")
 		
 def push():
 	'''Displayed when there is a tie'''
 	print("\nPush! You two have the same card value! You get back your bet. You have $%.2f remaining.\n" % (myMoney))
+	print("\nIf you want to play again, type in blackjack()!\n")
 
 def specialBetCheck():
 	'''checks for split, double, insurance, surrender'''
-	
 	print("\nHave a bad hand? You have the option to surrender and get half your bet back!\n")
 	surrenderCheck = False
 	responseCheck = input("Do you want to surrender? (Y/N) ").upper()
@@ -268,7 +330,35 @@ def specialBetCheck():
 		else:
 			print("\nInvalid input. Please try again.")
 			responseCheck = input("Do you want to double down? (Y/N) ").upper()
-	pass
+
+		if dealerTopCardValue == 11:
+			print("\nThe dealer has an ace. Do you want to take a separate insurance bet that pays double which is half your original bet?\n")
+			insuranceCheck = False
+			responseCheck = input("Do you want to bet insurance? (Y/N) ").upper()
+			while insuranceCheck == False:
+				if responseCheck == "Y":
+					insurance()
+					return
+				elif responseCheck == "N":
+					insuranceCheck = True
+				else:
+					print("\nInvalid input. Please try again.")
+					responseCheck = input("Do you want to bet insurance? (Y/N) ").upper()
+
+		if myCards[0][2] == myCards[1][2]:
+			print("\nSince your two cards have the same value, you have the opportunity to split and play a separate game.\n")
+			splitCheck = False
+			responseCheck = input("Do you want to split? (Y/N) ").upper()
+			while splitCheck == False:
+				if responseCheck == "Y":
+					split()
+					return
+				elif responseCheck == "N":
+					splitCheck = True
+				else:
+					print("\nInvalid input. Please try again.")
+					responseCheck = input("Do you want to split? (Y/N) ").upper()
+	return
 
 def surrender():
 	'''causes the player to surrender'''
@@ -279,6 +369,10 @@ def surrender():
 	return
 
 def split():
+	global secondaryBet
+
+	splitCards.append(myCards.pop())
+	secondaryBet = myBet
 	pass
 
 
@@ -289,36 +383,164 @@ def doubleDown():
 	doubleDownTaken = True
 	myBet *= 2
 	playerHit()
-	dealerTurn()
+	dealerHit()
+	checkWin()
 	return
 
 
 def insurance():
+	global insuranceTaken
+	global secondaryBet
+
+	insuranceTaken = True
+	secondaryBet = .5 * myBet
 	pass
 
+def playerMove():
+	playerTurn = True
+	moveCheck = input("Do you want to hit or stand? (hit/stand) ").lower()
+	while playerTurn or myCardValue < 21:
+		if moveCheck == "hit":
+			playerHit()
+			moveCheck = input("Do you want to hit or stand? (hit/stand) ").lower()
+		elif moveCheck == "stand":
+			playerTurn = False
+		else:
+			print("\nInvalid input. Please try again.")
+			moveCheck = input("Do you want to hit or stand? (hit/stand) ").lower()
+	return
 
 def playerHit():
 	myCards.append(deck.pop(random.randrange(len(deck))))
-	pass
-
-
-def playerStand():
-	pass
-
-
-def dealerTurn():
-	pass
-
+	sayCards()
+	sayCardValues()
+	return
 
 def dealerHit():
-	pass
+	global lost
+	global myBet
+	global secondaryBet
+	global myMoney
+	print("The dealer has the", " and the ".join(deckToString(dealersCards)))
+	print("The value of the dealer's cards is", dealerCardValue)
+	if dealerCardValue == 21:
+		print("\nThe dealer got blackjack! You lost 1.5 times your bet amount.\n")
+		myBet *=1.5
+		if splitTaken:
+			secondaryBet *=1.5
+		if insuranceTaken:
+			print("\nHowever, you won the insurance bet! You get $%.2f back.\n" % 2*secondaryBet)
+			myMoney += (2*secondaryBet)
+		lost = True
+		return
+	elif insuranceTaken:
+		print("\nHowever, you lost the insurance bet! You lost $%.2f.\n" % secondaryBet)
+		myMoney -= secondaryBet
+	while dealerCardValue < 17:	
+		print("\nDealer is drawing.\n")
+		time.sleep(1)
+		dealersCards.append(deck.pop(random.randrange(len(deck))))
+		sayCards()
+		print("The dealer has the", " and the ".join(deckToString(dealersCards)))
+		sayCardValues()
+		print("The value of the dealer's cards is", dealerCardValue)
+	return
 
+def splitMove():
+	'''Plays if you have a split'''
+	global myMoney
+	print("\nPlaying first deck\n")
+	playerTurn = True
+	moveCheck = input("Do you want to hit or stand? (hit/stand) ").lower()
+	while playerTurn or myCardValue < 21:
+		if moveCheck == "hit":
+			playerHit()
+			moveCheck = input("Do you want to hit or stand? (hit/stand) ").lower()
+		elif moveCheck == "stand":
+			playerTurn = False
+		else:
+			print("\nInvalid input. Please try again.")
+			moveCheck = input("Do you want to hit or stand? (hit/stand) ").lower()
+	print("\nPlay second deck.\n")
+	playerTurn = True
+	moveCheck = input("Do you want to hit or stand? (hit/stand) ").lower()
+	while playerTurn or splitCardValue < 21:
+		if moveCheck == "hit":
+			splitCards.append(deck.pop(random.randrange(len(deck))))
+			sayCardsSplit()
+			sayCardValues()
+			moveCheck = input("Do you want to hit or stand? (hit/stand) ").lower()
+		elif moveCheck == "stand":
+			playerTurn = False
+		else:
+			print("\nInvalid input. Please try again.")
+			moveCheck = input("Do you want to hit or stand? (hit/stand) ").lower()
+	dealerHit()
+	print("Checking deck 1")
+	if myCardValue > 21:
+		print("\nBust! You went over 21!\n")
+		print("\nDarn, you lost for deck 1. D: Better luck next time! You have lost $%.2f. You have $%.2f remaining.\n"
+		% (myBet, myMoney))
+		myMoney -= myBet
+	elif dealerCardValue > 21:
+		print("\nBust! The dealer went over 21!\n")
+		print("\nCongratulations! You win for deck 1! $%.2f has been added to your money amount! You currently have $%.2f.\n"
+		% (myBet, myMoney))
+		myMoney += myBet
+	elif myCardValue == dealerCardValue:
+		print("\nPush! You two have the same card value for deck 1! You get back your bet. You have $%.2f remaining.\n" % (myMoney))
+	elif myCardValue < dealerCardValue:
+		print("\nDarn, you lost for deck 1. D: Better luck next time! You have lost $%.2f. You have $%.2f remaining.\n"
+		% (myBet, myMoney))
+		myMoney -= myBet
+	elif myCardValue > dealerCardValue:
+		print("\nCongratulations! You win for deck 1! $%.2f has been added to your money amount! You currently have $%.2f.\n"
+		% (myBet, myMoney))
+		myMoney += myBet
+	print("Checking deck 2")
+	if myCardValue > 21:
+		print("\nBust! You went over 21!\n")
+		lost = True
+		print("\nDarn, you lost for deck 2. D: Better luck next time! You have lost $%.2f. You have $%.2f remaining.\n"
+		% (secondaryBet, myMoney))
+		myMoney -= secondaryBet
+	elif dealerCardValue > 21:
+		print("\nBust! The dealer went over 21!\n")
+		print("\nCongratulations! You win for deck 2! $%.2f has been added to your money amount! You currently have $%.2f.\n"
+		% (secondaryBet, myMoney))
+		myMoney += secondaryBet
+	elif myCardValue == dealerCardValue:
+		print("\nPush! You two have the same card value for deck 2! You get back your bet. You have $%.2f remaining.\n" % (myMoney))
+	elif myCardValue < dealerCardValue:
+		print("\nDarn, you lost for deck 2. D: Better luck next time! You have lost $%.2f. You have $%.2f remaining.\n"
+		% (secondaryBet, myMoney))
+		myMoney -= secondaryBet
+	elif myCardValue > dealerCardValue:
+		print("\nCongratulations! You win for deck 1! $%.2f has been added to your money amount! You currently have $%.2f.\n"
+		% (secondaryBet, myMoney))
+		myMoney += secondaryBet
+	return
 
-def dealerStand():
-	pass
 
 def checkWin():
-	pass
+	global won
+	global lost
+	global pushed
+	global myBet
+
+	if myCardValue > 21:
+		print("\nBust! You went over 21!\n")
+		lost = True
+	elif dealerCardValue > 21:
+		print("\nBust! The dealer went over 21!\n")
+		won = True
+	elif myCardValue == dealerCardValue:
+		pushed = True
+	elif myCardValue < dealerCardValue:
+		lost = True
+	elif myCardValue > dealerCardValue:
+		won = True
+	return
 
 welcome()
 blackjack()
