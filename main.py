@@ -364,13 +364,14 @@ def surrender():
 	'''causes the player to surrender'''
 	global lost
 	global myBet
+	print("\nYou have decided to surrender.\n")
 	lost = True
 	myBet /= 2
 	return
 
 def split():
 	global secondaryBet
-
+	print("\nYou have now split your deck and bet the same as your original bet for the new deck.")
 	splitCards.append(myCards.pop())
 	secondaryBet = myBet
 	pass
@@ -379,9 +380,10 @@ def split():
 def doubleDown():
 	global myBet
 	global doubleDownTaken
-
+	
 	doubleDownTaken = True
 	myBet *= 2
+	print("\nYour bet has been doubled, making it now $%.2f." % (myBet))
 	playerHit()
 	dealerHit()
 	checkWin()
@@ -394,6 +396,7 @@ def insurance():
 
 	insuranceTaken = True
 	secondaryBet = .5 * myBet
+	print("\nYou have decided to take the insurance bet for $%.2f" % (secondaryBet))
 	pass
 
 def playerMove():
@@ -500,7 +503,6 @@ def splitMove():
 	print("Checking deck 2")
 	if myCardValue > 21:
 		print("\nBust! You went over 21!\n")
-		lost = True
 		print("\nDarn, you lost for deck 2. D: Better luck next time! You have lost $%.2f. You have $%.2f remaining.\n"
 		% (secondaryBet, myMoney))
 		myMoney -= secondaryBet
